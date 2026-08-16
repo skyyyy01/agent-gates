@@ -46,13 +46,19 @@ mutate() {
   fi
 }
 
+# ⚠️ 基线检查**不计入变异数**，单独统计（2026-08-16）：它们是变异自检的前置条件，
+# 不是变异。混在一个 PASS 里报出来，对外就成了「10 个变异」，而实际只有 8 个——
+# README 的表格一度同时写着「10/10」和「破坏八次」，两个数字都来自这一行输出。
+# 汇总行自己说清楚，比让读者记住哪几项不是变异可靠。
 echo "── 0. 未变异时必须全绿（否则下面的「变红」说明不了任何事）──"
+BASE_OK=0; BASE_N=0
 for r in test_review_hook.sh test_truncation_cases.sh; do
+  BASE_N=$((BASE_N+1))
   if bash "$SP/$r" >/dev/null 2>&1; then
-    printf '  ✅ %s 基线全绿\n' "$r"; PASS=$((PASS+1))
+    printf '  ✅ %s 基线全绿\n' "$r"; BASE_OK=$((BASE_OK+1))
   else
     printf '  ❌ %s 基线就是红的 —— 先修它，变异自检在此之前没有意义\n' "$r"
-    FAIL=$((FAIL+1)); echo; echo "════ mutations PASS=$PASS FAIL=$FAIL ════"; exit 1
+    echo; echo "════ 基线 $BASE_OK/$BASE_N —— 变异一条都没跑 ════"; exit 1
   fi
 done
 
@@ -107,5 +113,5 @@ mutate M8 "不剥 heredoc 正文" \
   test_truncation_cases.sh "t9_real_heredoc"
 
 echo
-echo "════ mutations PASS=$PASS FAIL=$FAIL ════"
+echo "════ mutations $PASS/$((PASS+FAIL)) · baseline $BASE_OK/$BASE_N ════"
 [ "$FAIL" -eq 0 ] || exit 1
