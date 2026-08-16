@@ -1,0 +1,21 @@
+{
+  "01_deny_tail": true,
+  "02_deny_head": true,
+  "03_ok_clean": false,
+  "04_ok_msg_has_pipe": false,
+  "05_ok_mentions_in_string": false,
+  "06_ok_and_push": false,
+  "07_ok_git_log": false,
+  "t10_ok_midline": true,
+  "t11_heredoc_then_cmd": false,
+  "t12_heredoc_mentions": false,
+  "t1_real_tail": true,
+  "t2_real_head_cd": true,
+  "t3_real_env": true,
+  "t4_fp_summary": false,
+  "t5_fp_grep": false,
+  "t6_ok_nopipe": false,
+  "t7_ok_gitlog": false,
+  "t8_fp_echo": false,
+  "t9_real_heredoc": true
+}

@@ -1,0 +1,1 @@
+{"tool_name": "Bash", "tool_input": {"command": "git commit -m \"$(cat <<EOF\n\u8bb0\u6863: \u522b\u7528 git commit | tail\nEOF\n)\""}}

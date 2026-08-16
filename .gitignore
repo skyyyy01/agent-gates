@@ -1,0 +1,20 @@
+# ── agent-gates 运行时产物（绝不入库）────────────────────────────
+# 审查快照与插件调用时间戳：每台机器、每次提交都不同，入库会让闸门读到
+# 别人的盖章记录 = 假绿。它们由 hook 自己生成，不需要版本控制。
+.claude/hooks/.review-ok
+.claude/hooks/.review-skill
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# ── macOS / 编辑器 ───────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp

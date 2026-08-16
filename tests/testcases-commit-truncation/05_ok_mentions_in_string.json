@@ -1,0 +1,1 @@
+{"tool_name": "Bash", "tool_input": {"command": "echo \"别写 git commit | tail -4 这种\" > /tmp/note.txt"}}

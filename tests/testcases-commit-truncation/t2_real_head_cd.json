@@ -1,0 +1,1 @@
+{"tool_name": "Bash", "tool_input": {"command": "cd /x && git commit -m \"y\" | head -3"}}
