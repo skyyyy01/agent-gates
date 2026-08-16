@@ -14,11 +14,18 @@
 # 变异自检见 `tests/mutations.sh` —— 它把这里的断言逐条破坏一次，证明它们不是摆设。
 SP="$(cd "$(dirname "$0")" && pwd)"
 HOOK="${HOOK_OVERRIDE:-$SP/../hooks/review-before-commit.sh}"
-T="${TMPDIR:-/tmp}/review_hook_t_repo"
+# ⚠️ 样本仓库必须是 `mktemp -d`，**不能是固定路径**（2026-08-16 实测踩到）：
+# 原先写死在 `$TMPDIR/review_hook_t_repo`，于是同一台机器上两个实例一相遇——
+# 我跑 mutations.sh（它内部要跑本脚本七次）、同时另一个终端也在跑本脚本——
+# 后启动的那个 `rm -rf` 掉了前一个正在用的目录，hook 于是在 `cd "$repo"` 那步
+# 就静默 exit 0，一整批「应该 deny」的断言集体变红，红得毫无道理可循。
+# 表现形式恰恰是本项目最恨的那种：同一个脚本连跑四次全绿、第五次 18/5。
+T="$(mktemp -d)"
+trap 'rm -rf "$T"' EXIT
 PASS=0; FAIL=0
 
 setup() {
-  rm -rf "$T"; mkdir -p "$T/.claude/hooks"; cd "$T" || exit 1
+  mkdir -p "$T/.claude/hooks"; cd "$T" || exit 1
   git init -q .; git config user.email t@t; git config user.name t
   : >.claude/hooks/review-before-commit   # 启用开关
   : >.claude/hooks/review-required        # 闸门开关
