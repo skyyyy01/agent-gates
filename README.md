@@ -8,7 +8,8 @@ a size budget.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/requires-Claude%20Code-8A63D2)](https://claude.com/claude-code)
-[![Tests](https://img.shields.io/badge/tests-52%20checks%20%2B%208%20mutations-green)](tests/)
+[![Tests](https://img.shields.io/badge/tests-72%20checks%20%2B%208%20mutations-green)](tests/)
+[![CI](https://github.com/skyyyy01/agent-gates/actions/workflows/tests.yml/badge.svg)](https://github.com/skyyyy01/agent-gates/actions/workflows/tests.yml)
 
 **English** | [中文](https://github.com/skyyyy01/agent-gates/blob/main/docs/README_ZH.md)
 
@@ -32,6 +33,60 @@ That's the whole idea. Reminders degrade. Gates don't.
 The full reasoning, including the three silent failures that happened *inside*
 the gate while building it: [why mechanism, not discipline](docs/why-mechanism-not-discipline.md).
 
+## What it looks like
+
+Reminder mode — one line, doesn't block:
+
+```
+🔍 This commit touches 1 code file (payment.py …) — review before committing:
+   /open-code-review:delegate-review
+   (…don't substitute "I'll just read the diff myself" — that only shows you
+    the dimensions you already thought of.)
+```
+
+Hard gate — denied:
+
+```
+decision: deny
+
+Files not yet reviewed (or edited after review): payment.py
+
+Run /open-code-review:delegate-review first. The gate opens automatically once
+it has; editing a file again requires a fresh review. The gate only looks at
+what THIS commit would commit, so a colleague's unreviewed file won't block you
+(and don't review it for them — that stamps code you haven't read).
+
+To skip anyway: SKIP_REVIEW_GATE=1 git commit …  (must start the line; stays in
+shell history so it can be spot-checked)
+```
+
+Truncation gate — this is the one that earned its keep:
+
+```
+decision: deny
+
+🚫 `ocr delegate rule` was followed by a pipe/redirect — the files that got cut
+off can't be stamped, and the commit's pass condition is "is every file in this
+commit stamped?". So this round did nothing — worse, it looks like it worked.
+
+  you wrote:  ocr delegate rule payment.py | head -20
+
+Correct form: that command alone on its line, nothing after it.
+
+⚠️ This gate was upgraded from a hint to a hard deny on 2026-08-04: the rule was
+violated four times in a single day — it was in CLAUDE.md, it had been turned
+into a mechanical step, it was written into the journal and into memory that
+same day. None of it held.
+```
+
+Budget checker:
+
+```
+❌ CLAUDE.md over reading budget:
+   · 41,000 B > 40,000 B — sink the entries that don't earn their place, then
+     merge related ones; raising the cap is the last resort
+```
+
 ## Who this is for
 
 Two conditions, both required:
@@ -49,12 +104,23 @@ Two conditions, both required:
 
 ## Install
 
+Needs **bash**, **git**, and **Python 3.11+** (the budget checker reads
+`gates.toml` with the stdlib `tomllib`). Nothing else — no package manager, no
+dependencies.
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/skyyyy01/agent-gates/main/install.sh | bash
 ```
 
 Installs two hooks into `~/.claude/hooks/` and registers three events in
 `~/.claude/settings.json` (idempotent, backs up first).
+
+Reasonable instinct, for something that edits `settings.json` — read it first:
+
+```bash
+git clone https://github.com/skyyyy01/agent-gates && cd agent-gates
+less install.sh && bash install.sh    # uses the local hooks/, never hits the network
+```
 
 **Nothing happens yet.** Gates are off until a project opts in — a tool that
 starts blocking on install gets uninstalled.
@@ -65,9 +131,18 @@ mkdir -p .claude/hooks
 touch .claude/hooks/review-before-commit    # 1 — remind
 touch .claude/hooks/review-required         # 2 — deny
 touch .claude/hooks/review-includes-tests   # 3 — widen scope
+
+# Commit the switches; never commit the snapshots
+printf '%s\n' '.claude/hooks/.review-ok' '.claude/hooks/.review-skill' >> .gitignore
 ```
 
 Three independent switches. Start with `1` alone for a few days.
+
+That last line isn't housekeeping. The marker files *should* be committed — they
+say the project gates its commits. But `.review-ok` holds the content hashes of
+files **you** have reviewed; commit it and your stamps pass your teammate's gate,
+which then opens for code nobody there has read. The gate still runs. It's just
+answering with someone else's evidence.
 
 ## The gates
 
@@ -126,8 +201,8 @@ Numbers from real use, not estimates:
 |---|---|
 | **Defects caught, same change set** | lint + types + 1085 tests + mutations → **0**. Reading the diff myself → **4**. Running it against an external rule checklist → **2 more**. |
 | **Truncation recurrence** | **5 times in one session**, rule already documented in four places |
-| **Test suite** | **52 checks** — 22 gate scenarios (incl. self-referential: a commit message quoting the escape hatch must still be denied), 15 structural, 15 end-to-end |
-| **Mutation self-check** | **8/8** — every assertion goes red when its subject breaks, green after restore. One of them was itself a false green, caught by breaking the *anchor* instead of the subject |
+| **Test suite** | **72 checks** — 23 gate scenarios (incl. self-referential: a commit message quoting the escape hatch must still be denied), 19 truncation cases, 15 structural, 15 end-to-end. All five suites run in CI on Linux and macOS |
+| **Mutation self-check** | **8/8** — `tests/mutations.sh` breaks the hook eight ways and requires a *named* assertion to go red each time. Two of the eight were false greens when it was written: one needed the *anchor* broken instead of the subject, the other was an assertion that couldn't tell a denial from a reminder |
 | **Doc-reference checker** | 27 symbols, **0 false positives** |
 
 That first row is the argument for the whole project: the automated tooling
@@ -168,7 +243,7 @@ mtime), and the reference implementation in RFC #45427.
 
 Converging that hard usually means the shape is right. What's here that isn't
 elsewhere: neither of those shipped as something you can install, and neither
-came with the test suite. The 22 scenarios and the mutation checks are the part
+came with the test suite. The 72 checks and the mutation harness are the part
 that took real breakage to write.
 
 ## Repo layout
@@ -177,8 +252,15 @@ that took real breakage to write.
 hooks/       two hooks — the gates themselves
 checkers/    optional pre-commit checks (budget, doc references, index)
 templates/   .brain skeleton, project switches, gates.toml, pre-commit config
-tests/       22 gate scenarios + 15 structural + 15 end-to-end
+tests/       23 gate + 19 truncation + 15 structural + 15 e2e, plus mutations.sh
 ```
+
+The `.brain` skeleton ships as `templates/brain/` and the checkers look for it
+under a leading dot, so copy it across as `cp -R templates/brain your-project/.brain`.
+
+Contributing, and what to run after touching a hook: [CONTRIBUTING.md](CONTRIBUTING.md).
+What this tool touches on your machine, and why it is not a security boundary:
+[SECURITY.md](SECURITY.md).
 
 ## A note on comments
 

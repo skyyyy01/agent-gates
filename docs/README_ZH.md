@@ -7,7 +7,8 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](../LICENSE)
 [![Claude Code](https://img.shields.io/badge/requires-Claude%20Code-8A63D2)](https://claude.com/claude-code)
-[![Tests](https://img.shields.io/badge/tests-52%20checks%20%2B%208%20mutations-green)](../tests/)
+[![Tests](https://img.shields.io/badge/tests-72%20checks%20%2B%208%20mutations-green)](../tests/)
+[![CI](https://github.com/skyyyy01/agent-gates/actions/workflows/tests.yml/badge.svg)](https://github.com/skyyyy01/agent-gates/actions/workflows/tests.yml)
 
 [English](https://github.com/skyyyy01/agent-gates/blob/main/README.md) | **中文**
 
@@ -28,6 +29,54 @@
 
 完整的推理链，包括造闸门的过程中在**闸门自己身上**踩到的三个静默失败：[why mechanism, not discipline](why-mechanism-not-discipline.md)（英文）。
 
+## 长什么样
+
+提醒模式 —— 一行，不拦：
+
+```
+🔍 这次 commit 动了 1 个代码文件（payment.py …）——提交前跑：
+   /open-code-review:delegate-review
+   （…别用「我自己读一遍 diff」代替——那只看得到你想得到的维度。）
+```
+
+硬闸门 —— 拒绝：
+
+```
+decision: deny
+
+尚未审查（或审查后又改动）的文件: payment.py
+
+先跑 /open-code-review:delegate-review，跑过之后本闸门会自动放行；文件再被改动
+则需重审。闸门只看**这条 commit 会提交的文件**，多会话并行时别人的未审文件不会
+卡住你（也别替他审——那等于给没读过的代码盖章）。
+
+确需跳过：SKIP_REVIEW_GATE=1 git commit …（必须整条命令行首起句，会留在 shell
+历史里便于抽查）
+```
+
+截断闸门 —— 这条是最值回票价的：
+
+```
+decision: deny
+
+🚫 `ocr delegate rule` 后面跟了管道/重定向 —— 被截掉的文件盖不上章，而 commit 的
+判据是「本次要提交的文件是否都有章」，所以这一轮等于白跑（甚至会让你以为审过了）。
+
+  你写的:  ocr delegate rule payment.py | head -20
+
+正确形式：这条命令单独成行，后面什么都不加。
+
+⚠️ 本闸门 2026-08-04 从「提示」升级为 deny：同一天内该纪律被踩四次——CLAUDE.md
+写过、写成机械动作、当天写进 journal 与 memory，都没挡住。
+```
+
+预算检查：
+
+```
+❌ CLAUDE.md 超出读取预算:
+   · 全文 41,000 B > 40,000 B —— 先下沉不够格的条目，再合并同族，最后才考虑提高上限
+```
+
 ## 这是给谁用的
 
 两个条件，缺一不可：
@@ -42,12 +91,22 @@
 
 ## 安装
 
+需要 **bash**、**git**、**Python 3.11+**（预算检查器用标准库 `tomllib` 读 `gates.toml`）。
+没有别的依赖 —— 不装包、不建虚拟环境。
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/skyyyy01/agent-gates/main/install.sh | bash
 ```
 
 它把两个 hook 装进 `~/.claude/hooks/`，并在 `~/.claude/settings.json` 注册三个事件
 （幂等，先备份）。
+
+一个要改 `settings.json` 的脚本，想先读一遍再跑是合理的：
+
+```bash
+git clone https://github.com/skyyyy01/agent-gates && cd agent-gates
+less install.sh && bash install.sh    # 用本地 hooks/，全程不联网
+```
 
 **装完什么都不会发生。** 闸门默认关闭，逐项目 opt-in —— 一个装上就开始拦人的工具会被立刻卸掉。
 
@@ -57,9 +116,17 @@ mkdir -p .claude/hooks
 touch .claude/hooks/review-before-commit    # ① 提醒
 touch .claude/hooks/review-required         # ② 拒绝
 touch .claude/hooks/review-includes-tests   # ③ 扩大范围
+
+# 开关进版本控制，快照绝不进
+printf '%s\n' '.claude/hooks/.review-ok' '.claude/hooks/.review-skill' >> .gitignore
 ```
 
 三个开关互相独立。建议先只开 ①，用几天再说。
+
+最后那行不是收尾杂务。开关文件**应该**提交 —— 它声明的是「这个项目对提交设闸」，
+属于项目本身。但 `.review-ok` 装的是**你**审过的那些文件的内容 hash，提交上去就意味着
+你的盖章记录能通过队友的闸门，而他那边一个文件都没审过。闸门照常运行，
+只是拿别人的证据在回答。
 
 ## 闸门
 
@@ -112,8 +179,8 @@ touch .claude/hooks/review-includes-tests   # ③ 扩大范围
 |---|---|
 | **同一批改动的缺陷检出** | lint + 类型 + 1085 测试 + 变异 → **0 个**。自己读 diff → **4 个**。按外部规则清单再审 → 又 **2 个**。 |
 | **截断问题的复发** | **一个 session 内五次**，而规则已经写在四个地方 |
-| **测试总量** | **52 项** —— 22 个闸门场景（含自指：commit message 里原样引用逃生口仍须被 deny）、15 项结构、15 项端到端 |
-| **变异自检** | **8/8** —— 每条断言在被测对象损坏时变红、恢复后变绿。其中一条自己就是假绿，靠破坏**锚点**而非被测对象才照出来 |
+| **测试总量** | **72 项** —— 23 个闸门场景（含自指：commit message 里原样引用逃生口仍须被 deny）、19 个截断用例、15 项结构、15 项端到端。五套都在 CI 上跑，Linux 与 macOS 双平台 |
+| **变异自检** | **8/8** —— `tests/mutations.sh` 把 hook 破坏八次，每次要求**指名的那条**断言变红。写它的时候当场照出两条假绿：一条要破坏**锚点**而非被测对象才红，另一条是「分不清 deny 与提醒」的断言 |
 | **文档引用检查** | 27 个符号，**0 误报** |
 
 第一行是整个项目的论据：自动化工具**一个都没抓到**，而且它没做错 —— 那些缺陷不是类型错误
@@ -150,7 +217,7 @@ PreToolUse + SHA-256 + 快照结构，连「用内容 hash 而不是 mtime」这
 以及 RFC #45427 里的参考实现。
 
 收敛得这么一致，通常说明形状是对的。这里有而别处没有的：那两个都**没有做成可安装的东西**，
-也都没有配套测试。22 个场景和变异自检，是真正踩过才写得出来的那部分。
+也都没有配套测试。72 项检查和那套变异自检，是真正踩过才写得出来的那部分。
 
 ## 目录结构
 
@@ -158,8 +225,14 @@ PreToolUse + SHA-256 + 快照结构，连「用内容 hash 而不是 mtime」这
 hooks/       两个 hook —— 闸门本体
 checkers/    可选的 pre-commit 检查（预算、文档引用、索引）
 templates/   .brain 骨架、项目开关、gates.toml、pre-commit 配置
-tests/       22 个闸门场景 + 15 项结构 + 15 项端到端
+tests/       23 闸门 + 19 截断 + 15 结构 + 15 端到端，外加 mutations.sh
 ```
+
+`.brain` 骨架在仓库里叫 `templates/brain/`（无点），而检查器找的是带点的目录，
+所以复制过去时要改名：`cp -R templates/brain 你的项目/.brain`。
+
+想参与、以及改完 hook 之后该跑什么：[CONTRIBUTING.md](../CONTRIBUTING.md)。
+这个工具会碰你机器上的什么、以及它为什么**不是**安全边界：[SECURITY.md](../SECURITY.md)。
 
 ## 关于注释
 

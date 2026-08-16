@@ -1,22 +1,35 @@
 # `git commit` / `ocr delegate rule` 截断闸门的场景用例
 
-跑法（数据必须**从文件读**，别用 `echo` 传——`echo` 会把 `\n` 解释成真换行 ⇒ 误判）:
+这里只放**语料**（19 个 `*.json`）和**期望**（`expect.json`，`true` = 必须 deny）。
+跑它们的是 `tests/test_truncation_cases.sh`：
 
 ```bash
-uv run python - <<'EOF'
-import json, pathlib, subprocess
-d = pathlib.Path(".claude/hooks/testcases-commit-truncation")
-exp = json.loads((d / "expect.json").read_text())
-hook = str(pathlib.Path.home() / ".claude/hooks/review-before-commit.sh")
-bad = []
-for name, want in exp.items():
-    p = subprocess.run(["bash", hook], stdin=(d / f"{name}.json").open("rb"),
-                       capture_output=True, text=True)
-    got = '"deny"' in p.stdout
-    if got != want: bad.append(name)
-print("OK" if not bad else f"FAIL: {bad}")
-EOF
+bash tests/test_truncation_cases.sh
 ```
+
+`tests/mutations.sh` 里的 M7 / M8 会故意破坏截断闸门，证明这批用例真的在测东西。
+
+## ⚠️ 这份跑法本身出过一次事（2026-08-16 修）
+
+原先这里写的是一段**要人手动粘贴**的 Python，而且：
+
+- 路径写的是 `.claude/hooks/testcases-commit-truncation` —— 那是作者机器上的旧位置，
+  仓库里的实际位置是 `tests/testcases-commit-truncation`，照抄必红
+- 没说必须在一个**已 opt-in**（`.claude/hooks/review-before-commit` 存在）的仓库里跑，
+  否则 hook 在第一道开关处就静默 exit 0，7 条「应该 deny」的用例全部落空
+- 没有任何脚本引用这 19 个用例 ⇒ 它们是孤儿，只有想起来才会被跑
+
+一个主张「机制优于纪律」的项目，把 19 个测试托付给了「记得手动粘贴文档里的代码」。
+这条自己踩的坑与 `docs/why-mechanism-not-discipline.md` 里记的那三个同源，
+所以留在这里，不删。
+
+## 两条仍然成立的注意事项
+
+- 数据必须**从文件喂给 stdin**，不能 `echo "$(cat f)"` 转一道 —— 用例里的 `\n` 是
+  JSON 字符串里的两字符转义，被解释成真换行就变成了另一条命令，heredoc 那几条
+  （t9/t11/t12）的判据整个失效
+- 判据要的是「**截断**闸门 deny 了」，不是「输出里有 deny」—— 后者会把审查闸门的
+  deny 算成截断闸门的功劳。runner 用两条截断文案共有的「后面跟了」当指纹
 
 ## 两批的来历
 

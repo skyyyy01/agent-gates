@@ -10,7 +10,33 @@ mkdir -p .claude/hooks
 touch .claude/hooks/review-before-commit    # 1 — reminder
 touch .claude/hooks/review-required         # 2 — hard gate
 touch .claude/hooks/review-includes-tests   # 3 — widen scope
+
+# Not optional — see below
+printf '%s\n' '.claude/hooks/.review-ok' '.claude/hooks/.review-skill' >> .gitignore
 ```
+
+## ⚠️ Before anything else: ignore the runtime artifacts
+
+The gate writes two files next to those markers:
+
+```
+.claude/hooks/.review-ok      # content hashes of files you reviewed
+.claude/hooks/.review-skill   # timestamp of the last review invocation
+```
+
+**Commit them and the gate starts lying.** `.review-ok` holds hashes of what
+*you* reviewed. Push it, a teammate clones, the gate consults it — and the
+hashes match, because the file contents match. It finds evidence, opens, and
+lets through code nobody on that machine ever looked at. The failure is silent
+and looks exactly like a passing gate.
+
+```bash
+printf '%s\n' '.claude/hooks/.review-ok' '.claude/hooks/.review-skill' >> .gitignore
+```
+
+Commit the three marker files below — they declare that this project gates its
+commits, and a teammate cloning should inherit that. Never the two artifacts
+above. Both regenerate locally on demand, so ignoring them costs nothing.
 
 ## 1. `review-before-commit` — reminder
 

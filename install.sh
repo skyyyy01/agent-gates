@@ -144,5 +144,13 @@ say "  touch .claude/hooks/review-before-commit    # ① 提醒：改了代码�
 say "  touch .claude/hooks/review-required         # ② 硬闸门：没审过就 deny（需 ocr）"
 say "  touch .claude/hooks/review-includes-tests   # ③ 把 tests/ 也纳入审查范围"
 say ""
+# ⚠️ 这两行不是可选的收尾工作。开关文件该进版本控制（团队共享），但**运行时产物不能**：
+# `.review-ok` 是审查快照，把它提交上去 = 你机器上的盖章记录能通过队友机器上的闸门，
+# 而队友那边什么都没审过。闸门看起来照常工作，判据却已经是别人的了 —— 又一个假绿。
+say "  printf '%s\\n' '.claude/hooks/.review-ok' '.claude/hooks/.review-skill' >>.gitignore"
+say ""
+say "最后那行别省：开关文件该进版本控制，但审查快照 .review-ok 绝不能 ——"
+say "提交它等于让你的盖章记录通过队友的闸门，而他那边一个文件都没审过。"
+say ""
 say "三个开关互相独立，建议先只开 ①，用几天再决定要不要 ②。"
 say "预算检查器（可选）：把 templates/gates.toml.example 复制成仓库根的 gates.toml。"

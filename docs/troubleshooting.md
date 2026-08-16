@@ -76,6 +76,24 @@ The docs say `PostToolUse` has no `tool_response`. **Measured: it does.**
 Don't "fix" a branch that reads it just because the documentation disagrees.
 Check what your version actually delivers.
 
+## Gate passes on a machine where nobody reviewed anything
+
+**Cause: `.claude/hooks/.review-ok` got committed.**
+
+The snapshot holds content hashes of files *you* reviewed. Commit it and it
+travels — your teammate clones, the gate consults it, and the hashes match
+because the file contents match. The gate runs, finds evidence, and opens. The
+evidence is just someone else's.
+
+```bash
+git rm --cached .claude/hooks/.review-ok .claude/hooks/.review-skill
+printf '%s\n' '.claude/hooks/.review-ok' '.claude/hooks/.review-skill' >> .gitignore
+```
+
+Commit the three marker files — they declare that this project gates its
+commits. Never the two runtime artifacts. Both are regenerated locally on
+demand, so ignoring them costs nothing.
+
 ## Gate passes but nothing was checked
 
 Two shapes, both silent:

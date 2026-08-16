@@ -1,0 +1,45 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    # Linux and macOS both, on purpose: the hooks lean on grep -xF, xargs -0 and
+    # sed, and GNU and BSD disagree about all three. Development happens on
+    # macOS, so Linux is the side that would rot unnoticed.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # 3.11 is the floor, not a preference: check_brain_budget.py reads
+          # gates.toml with the stdlib `tomllib`, which landed in 3.11.
+          python-version: '3.11'
+
+      - name: gate hooks — 23 scenarios
+        run: bash tests/test_review_hook.sh
+
+      - name: truncation gate — 19 scenarios
+        run: bash tests/test_truncation_cases.sh
+
+      - name: checkers — 15 structural checks
+        run: python3 tests/test_checkers.py
+
+      - name: end-to-end — install onto a clean machine, 15 checks
+        run: bash tests/e2e.sh
+
+      - name: mutation self-check — 8 mutations
+        # Last on purpose. It breaks the hook eight ways and demands that a
+        # *named* assertion goes red each time. If the suites above are green
+        # and this one fails, the tests are the thing that's broken.
+        run: bash tests/mutations.sh
