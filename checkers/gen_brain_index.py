@@ -43,7 +43,11 @@ from pathlib import Path
 # `.brain/` 找不到 ⇒ 两个 section 都被跳过 ⇒ 打印「已是最新」并 exit 0,
 # 与「真的已是最新」一模一样([[gotcha_no_info_rendered_as_normal]])。
 # 下面 `main()` 里的「两个目录都不存在就报错」是同一道防线的另一半。
-ROOT = Path(__file__).resolve().parent.parent
+# ⚠️ 见 _common.repo_root 的注释：用 __file__ 定位会让这道检查在被别的仓库
+# 引用时静默检查 agent-gates 自己 —— 报「全部合格」而其实一个文件都没看。
+from _common import repo_root
+
+ROOT = repo_root()
 
 # 索引文件名。⚠️ **必须把它自己排除在被索引的集合之外** —— 否则第一次生成后
 # 索引里会多出「INDEX.md — 踩坑清单索引」这条,而它是**上一次生成的产物**,

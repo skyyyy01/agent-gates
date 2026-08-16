@@ -1,0 +1,32 @@
+# Wiring the checkers into pre-commit.
+# Point `entry` at wherever you cloned agent-gates.
+#
+# ⚠️ These are LOCAL hooks on purpose. A `repo:` entry would pin a revision and
+# silently keep running an old copy of the checker after you update the clone.
+
+repos:
+  - repo: local
+    hooks:
+      - id: brain-budget
+        name: reading budget for always-loaded files
+        entry: python3 /path/to/agent-gates/checkers/check_brain_budget.py
+        language: system
+        pass_filenames: true
+        # Must cover every in-repo target in gates.toml. If a target is not
+        # matched here, editing it never triggers the gate — the budget exists
+        # but nothing enforces it.
+        files: ^(CLAUDE\.md|docs/state/.*\.md)$
+
+      - id: doc-references
+        name: symbols cited in docs must exist
+        entry: python3 /path/to/agent-gates/checkers/check_doc_references.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: brain-index
+        name: regenerate decisions/gotchas index
+        entry: python3 /path/to/agent-gates/checkers/gen_brain_index.py --check
+        language: system
+        pass_filenames: false
+        always_run: true

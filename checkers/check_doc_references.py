@@ -28,7 +28,11 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+# ⚠️ 见 _common.repo_root 的注释：用 __file__ 定位会让这道检查在被别的仓库
+# 引用时静默检查 agent-gates 自己 —— 报「全部合格」而其实一个文件都没看。
+from _common import repo_root
+
+ROOT = repo_root()
 
 # 扫这些文档里的符号引用
 # 默认只查 CLAUDE.md —— 这是**任何** Claude Code 项目都有的入口文件,搬去别的仓库

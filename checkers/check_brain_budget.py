@@ -52,7 +52,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-import subprocess
 
 try:
     import tomllib
@@ -60,28 +59,9 @@ except ModuleNotFoundError:  # Python < 3.11
     raise SystemExit("需要 Python 3.11+（tomllib 是内置模块）")
 
 
-# ── 仓库根 ────────────────────────────────────────────────────
-# ⚠️ **不能用 `Path(__file__).resolve().parents[1]`** —— 那只在「脚本就住在被检查的
-# 仓库里」时成立。本工具的 checkers 是被**别的**仓库引用的(pre-commit 指过来),
-# `__file__` 指向 agent-gates 自己 ⇒ 会跑去 agent-gates 里找用户的 CLAUDE.md、
-# 一个都找不到 = **闸门空转且全绿**。这正是本工具专治的那种 fail-OPEN,
-# 而它差点长在工具自己身上。
-#
-# ⚠️ 也不能直接用 `Path.cwd()`:glob 从别的 cwd 跑会零命中,而零命中会被报成
-# 「闸门空转」= 假红(原实现的注释里记着:`cd /tmp` 后跑就复现)。
-# ⇒ 用 git 自己的答案,拿不到才回落 cwd。
-def _repo_root() -> Path:
-    try:
-        out = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, check=True,
-        )
-        return Path(out.stdout.strip())
-    except Exception:
-        return Path.cwd()
+from _common import repo_root
 
-
-_REPO_ROOT = _repo_root()
+_REPO_ROOT = repo_root()
 
 CONFIG_NAME = "gates.toml"
 

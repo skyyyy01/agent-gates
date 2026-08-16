@@ -1,0 +1,26 @@
+# Project-level exclusions for the review gate.
+# Copy to `.claude/hooks/review-exclude.txt`. One grep -E regex per line.
+# Lines starting with # are comments.
+#
+# The hook already excludes the obvious non-code: docs, *.md, lock files, CI
+# config, and (unless you opt in) tests/. What it cannot know is which paths in
+# YOUR repo are generated, vendored, or data.
+
+# Generated artifacts — reviewing them reviews the generator's output, not code
+^dist/
+^build/
+^target/
+
+# Vendored third-party code — not yours to review
+/vendor/
+/node_modules/
+
+# Append-only data files — every commit touches them, none of it is logic
+\.jsonl$
+
+# ⚠️ Do NOT exclude things merely because they are noisy in review.
+# Two categories look excludable but are not:
+#   - Test fixtures that assertions read from. If a fixture list goes wrong,
+#     the mutation test goes green while testing nothing.
+#   - Config that changes runtime behaviour (feature flags, thresholds).
+#     "It's just config" is how a threshold change ships unreviewed.
