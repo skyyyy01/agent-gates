@@ -47,7 +47,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # 索引文件名。⚠️ **必须把它自己排除在被索引的集合之外** —— 否则第一次生成后
 # 索引里会多出「INDEX.md — 踩坑清单索引」这条,而它是**上一次生成的产物**,
-# 于是每跑一次就多一层自指。这是本仓的高频病:
+# 于是每跑一次就多一层自指。这是这个仓库的高频病:
 # [[gotcha_self_referential_contamination]](说明 X 与犯 X 同形)。
 INDEX_NAME = "INDEX.md"
 
@@ -165,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
     folders = [(brain / d, d, h, b) for d, h, b in SECTIONS]
     if not any(f.is_dir() for f, *_ in folders):
         # ⚠️ 一个都找不到 = root 指错了。**必须报错,不能当「没什么要做的」** ——
-        # 静默 exit 0 与「真的已同步」在输出上完全一致,而这正是本仓十二次的老病。
+        # 静默 exit 0 与「真的已同步」在输出上完全一致,而这正是这个仓库十二次的老病。
         print(f"❌ {brain} 下既没有 gotchas/ 也没有 decisions/ —— 仓库根找错了?")
         return 1
 

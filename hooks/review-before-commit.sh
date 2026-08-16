@@ -231,7 +231,7 @@ code=$(printf '%s\n' "$files" \
 
 # 项目级追加排除：`.claude/hooks/review-exclude.txt`，每行一个 grep -E 正则，`#` 开头是注释。
 # 上面的通用规则按"排除明确不是代码的"设计，但每个项目都有自己的生成物/数据/vendor 目录
-# （本仓：reports/ 研究产物、.brain/*.jsonl 台账、static/vendor/ 第三方库），
+# （例如：生成的报告产物、追加式日志 *.jsonl、static/vendor/ 第三方库），
 # 那些只有项目自己知道 ⇒ 由项目声明，脚本保持通用。
 xf="$repo/.claude/hooks/review-exclude.txt"
 if [ -n "$code" ] && [ -f "$xf" ]; then
