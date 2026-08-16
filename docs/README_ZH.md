@@ -7,7 +7,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](../LICENSE)
 [![Claude Code](https://img.shields.io/badge/requires-Claude%20Code-8A63D2)](https://claude.com/claude-code)
-[![Tests](https://img.shields.io/badge/tests-22%20scenarios%20%2B%204%20mutations-green)](../tests/)
+[![Tests](https://img.shields.io/badge/tests-52%20checks%20%2B%208%20mutations-green)](../tests/)
 
 [English](https://github.com/skyyyy01/agent-gates/blob/main/README.md) | **中文**
 
@@ -112,8 +112,8 @@ touch .claude/hooks/review-includes-tests   # ③ 扩大范围
 |---|---|
 | **同一批改动的缺陷检出** | lint + 类型 + 1085 测试 + 变异 → **0 个**。自己读 diff → **4 个**。按外部规则清单再审 → 又 **2 个**。 |
 | **截断问题的复发** | **一个 session 内五次**，而规则已经写在四个地方 |
-| **闸门回归测试** | **22 个场景**，含自指场景（commit message 里原样引用逃生口，仍须被 deny） |
-| **变异自检** | **4/4** —— 每条断言在被测对象损坏时变红，恢复后变绿 |
+| **测试总量** | **52 项** —— 22 个闸门场景（含自指：commit message 里原样引用逃生口仍须被 deny）、15 项结构、15 项端到端 |
+| **变异自检** | **8/8** —— 每条断言在被测对象损坏时变红、恢复后变绿。其中一条自己就是假绿，靠破坏**锚点**而非被测对象才照出来 |
 | **文档引用检查** | 27 个符号，**0 误报** |
 
 第一行是整个项目的论据：自动化工具**一个都没抓到**，而且它没做错 —— 那些缺陷不是类型错误
@@ -158,7 +158,7 @@ PreToolUse + SHA-256 + 快照结构，连「用内容 hash 而不是 mtime」这
 hooks/       两个 hook —— 闸门本体
 checkers/    可选的 pre-commit 检查（预算、文档引用、索引）
 templates/   .brain 骨架、项目开关、gates.toml、pre-commit 配置
-tests/       22 场景回归测试 + 结构测试
+tests/       22 个闸门场景 + 15 项结构 + 15 项端到端
 ```
 
 ## 关于注释

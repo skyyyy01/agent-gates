@@ -126,6 +126,28 @@ check(
     "round(v * 1000)" in budget_src and "int(v * 1000)" not in budget_src,
 )
 
+# ── 7. An unconfigured dimension must mean "skip", not "limit of zero" ─────
+# Found by e2e, missed by both the unit tests and the equivalence run against a
+# real repo — that reference config filled in all three dimensions, so the
+# default value was never exercised. A default of 0 made every line exceed a
+# "0 byte" cap: a false red on any repo that only wanted a file-size budget.
+with tempfile.TemporaryDirectory() as td:
+    subprocess.run(["git", "init", "-q", td], check=True)
+    d = Path(td)
+    (d / "gates.toml").write_text(
+        '[[budget]]\npath = "DOC.md"\nmax_file_kb = 10\n', encoding="utf-8"
+    )
+    (d / "DOC.md").write_text("x" * 500, encoding="utf-8")  # one 500 B line
+    out = subprocess.run(
+        [sys.executable, str(ROOT / "checkers" / "check_brain_budget.py")],
+        cwd=td, capture_output=True, text=True,
+    )
+    check(
+        "check_brain_budget: omitted dimension is not checked",
+        out.returncode == 0 and "超出" not in out.stdout,
+        f"rc={out.returncode} out={out.stdout.strip()[:90]!r}",
+    )
+
 print()
 if FAILED:
     print(f"════ {len(FAILED)} FAILED ════")

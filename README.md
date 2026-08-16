@@ -8,7 +8,7 @@ a size budget.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/requires-Claude%20Code-8A63D2)](https://claude.com/claude-code)
-[![Tests](https://img.shields.io/badge/tests-22%20scenarios%20%2B%204%20mutations-green)](tests/)
+[![Tests](https://img.shields.io/badge/tests-52%20checks%20%2B%208%20mutations-green)](tests/)
 
 **English** | [中文](https://github.com/skyyyy01/agent-gates/blob/main/docs/README_ZH.md)
 
@@ -126,8 +126,8 @@ Numbers from real use, not estimates:
 |---|---|
 | **Defects caught, same change set** | lint + types + 1085 tests + mutations → **0**. Reading the diff myself → **4**. Running it against an external rule checklist → **2 more**. |
 | **Truncation recurrence** | **5 times in one session**, rule already documented in four places |
-| **Gate regression suite** | **22 scenarios**, including self-referential ones (a commit message quoting the escape hatch must still be denied) |
-| **Mutation self-check** | **4/4** — every assertion goes red when its subject breaks, green after restore |
+| **Test suite** | **52 checks** — 22 gate scenarios (incl. self-referential: a commit message quoting the escape hatch must still be denied), 15 structural, 15 end-to-end |
+| **Mutation self-check** | **8/8** — every assertion goes red when its subject breaks, green after restore. One of them was itself a false green, caught by breaking the *anchor* instead of the subject |
 | **Doc-reference checker** | 27 symbols, **0 false positives** |
 
 That first row is the argument for the whole project: the automated tooling
@@ -177,7 +177,7 @@ that took real breakage to write.
 hooks/       two hooks — the gates themselves
 checkers/    optional pre-commit checks (budget, doc references, index)
 templates/   .brain skeleton, project switches, gates.toml, pre-commit config
-tests/       22-scenario regression suite + structural tests
+tests/       22 gate scenarios + 15 structural + 15 end-to-end
 ```
 
 ## A note on comments

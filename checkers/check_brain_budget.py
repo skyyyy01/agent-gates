@@ -101,9 +101,9 @@ def _budgets_from(cfg: dict) -> tuple[Budget, ...]:
         out.append(
             Budget(
                 path=Path(b["path"]),
-                max_file=_kb(b, "max_file_kb", 0) or 0,
-                max_entry=_kb(b, "max_entry_kb", 0) or 0,
-                max_line=_kb(b, "max_line_kb", 0) or 0,
+                max_file=_kb(b, "max_file_kb"),
+                max_entry=_kb(b, "max_entry_kb"),
+                max_line=_kb(b, "max_line_kb"),
                 line_hint=b.get("line_hint", ""),
                 entry_hint=b.get("entry_hint", ""),
                 file_hint=b.get("file_hint", ""),
@@ -160,9 +160,13 @@ class Budget:
     """
 
     path: Path
-    max_file: int
-    max_entry: int
-    max_line: int
+    # ⚠️ None = **不检查这一维**,与下面 max_lines 同一约定。
+    # 起因(e2e 抓到):默认值原本是 0,于是配置里不写 max_line_kb 就等于「每行上限 0 B」,
+    # 任何一行都超标 = **假红**。而对比测试没抓到 —— 参照配置把三个维度都写全了,
+    # 恰好绕开了这条路径。**默认值必须是「不检查」而不是「上限为零」。**
+    max_file: int | None
+    max_entry: int | None
+    max_line: int | None
     line_hint: str
     entry_hint: str
     file_hint: str
@@ -252,7 +256,7 @@ def check(b: Budget) -> tuple[list[str], str]:
     # 1) 单行过长
     for i, line in enumerate(lines, 1):
         n = len(line.encode())
-        if n > b.max_line:
+        if b.max_line is not None and n > b.max_line:
             errors.append(f"L{i}: 单行 {n:,} B > {b.max_line:,} B —— {b.line_hint}")
 
     # 2) 单条过大(第一个 ## 之前的头部不计)
@@ -269,13 +273,13 @@ def check(b: Budget) -> tuple[list[str], str]:
         entries.append((title, size))
 
     for entry_title, entry_size in entries:
-        if entry_size > b.max_entry:
+        if b.max_entry is not None and entry_size > b.max_entry:
             errors.append(
                 f"条目「{entry_title[:40]}」{entry_size:,} B > {b.max_entry:,} B —— {b.entry_hint}"
             )
 
     # 3) 文件总量 = 固定读取预算
-    if len(raw) > b.max_file:
+    if b.max_file is not None and len(raw) > b.max_file:
         errors.append(f"全文 {len(raw):,} B > {b.max_file:,} B({len(entries)} 条)—— {b.file_hint}")
 
     # 4) 行数(只有 skill 用 —— 它们的预算是用行数写的,见 Budget.max_lines 注释)
@@ -290,7 +294,7 @@ def check(b: Budget) -> tuple[list[str], str]:
     summary = (
         f"{len(raw):,} B / {len(entries)} 条 / 最长行 {longest:,} B"
         + (f" / {n_lines:,} 行(上限 {b.max_lines:,})" if b.max_lines else "")
-        + f"  (上限 {b.max_file:,}/{b.max_entry:,}/{b.max_line:,})"
+        + "  (上限 %s/%s/%s)" % tuple(f"{v:,}" if v is not None else "—" for v in (b.max_file, b.max_entry, b.max_line))
     )
     return errors, summary
 
