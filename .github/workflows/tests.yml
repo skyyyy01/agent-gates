@@ -18,9 +18,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           # 3.11 is the floor, not a preference: check_brain_budget.py reads
           # gates.toml with the stdlib `tomllib`, which landed in 3.11.
