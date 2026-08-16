@@ -7,7 +7,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](../LICENSE)
 [![Claude Code](https://img.shields.io/badge/requires-Claude%20Code-8A63D2)](https://claude.com/claude-code)
-[![Tests](https://img.shields.io/badge/tests-72%20checks%20%2B%2010%20mutations-green)](../tests/)
+[![Tests](https://img.shields.io/badge/tests-72%20checks%20%2B%208%20mutations-green)](../tests/)
 [![CI](https://github.com/skyyyy01/agent-gates/actions/workflows/tests.yml/badge.svg)](https://github.com/skyyyy01/agent-gates/actions/workflows/tests.yml)
 
 [English](https://github.com/skyyyy01/agent-gates/blob/main/README.md) | **中文**
@@ -180,7 +180,7 @@ printf '%s\n' '.claude/hooks/.review-ok' '.claude/hooks/.review-skill' >> .gitig
 | **同一批改动的缺陷检出** | lint + 类型 + 1085 测试 + 变异 → **0 个**。自己读 diff → **4 个**。按外部规则清单再审 → 又 **2 个**。 |
 | **截断问题的复发** | **一个 session 内五次**，而规则已经写在四个地方 |
 | **测试总量** | **72 项** —— 23 个闸门场景（含自指：commit message 里原样引用逃生口仍须被 deny）、19 个截断用例、15 项结构、15 项端到端。五套都在 CI 上跑，Linux 与 macOS 双平台 |
-| **变异自检** | **10/10** —— `tests/mutations.sh` 把 hook 破坏八次，每次要求**指名的那条**断言变红。写它的时候当场照出两条假绿：一条要破坏**锚点**而非被测对象才红，另一条是「分不清 deny 与提醒」的断言 |
+| **变异自检** | **8/8** —— `tests/mutations.sh` 把 hook 破坏八次，每次要求**指名的那条**断言变红。写它的时候当场照出两条假绿：一条要破坏**锚点**而非被测对象才红，另一条是「分不清 deny 与提醒」的断言 |
 | **文档引用检查** | 27 个符号，**0 误报** |
 
 第一行是整个项目的论据：自动化工具**一个都没抓到**，而且它没做错 —— 那些缺陷不是类型错误

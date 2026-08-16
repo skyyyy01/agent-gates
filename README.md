@@ -8,7 +8,7 @@ a size budget.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/requires-Claude%20Code-8A63D2)](https://claude.com/claude-code)
-[![Tests](https://img.shields.io/badge/tests-72%20checks%20%2B%2010%20mutations-green)](tests/)
+[![Tests](https://img.shields.io/badge/tests-72%20checks%20%2B%208%20mutations-green)](tests/)
 [![CI](https://github.com/skyyyy01/agent-gates/actions/workflows/tests.yml/badge.svg)](https://github.com/skyyyy01/agent-gates/actions/workflows/tests.yml)
 
 **English** | [中文](https://github.com/skyyyy01/agent-gates/blob/main/docs/README_ZH.md)
@@ -202,7 +202,7 @@ Numbers from real use, not estimates:
 | **Defects caught, same change set** | lint + types + 1085 tests + mutations → **0**. Reading the diff myself → **4**. Running it against an external rule checklist → **2 more**. |
 | **Truncation recurrence** | **5 times in one session**, rule already documented in four places |
 | **Test suite** | **72 checks** — 23 gate scenarios (incl. self-referential: a commit message quoting the escape hatch must still be denied), 19 truncation cases, 15 structural, 15 end-to-end. All five suites run in CI on Linux and macOS |
-| **Mutation self-check** | **10/10** — `tests/mutations.sh` breaks the hook eight ways and requires a *named* assertion to go red each time. Two of the eight were false greens when it was written: one needed the *anchor* broken instead of the subject, the other was an assertion that couldn't tell a denial from a reminder |
+| **Mutation self-check** | **8/8** — `tests/mutations.sh` breaks the hook eight ways and requires a *named* assertion to go red each time. Two of the eight were false greens when it was written: one needed the *anchor* broken instead of the subject, the other was an assertion that couldn't tell a denial from a reminder |
 | **Doc-reference checker** | 27 symbols, **0 false positives** |
 
 That first row is the argument for the whole project: the automated tooling
