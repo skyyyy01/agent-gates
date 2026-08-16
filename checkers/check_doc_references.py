@@ -65,6 +65,29 @@ EXCLUDE_DIRS = {"probes", "__pycache__"}
 # assertion]] 指的就是 memory 文件)。把 [[]] 纳入硬检查 = 要么解析 git 外目录(脆),
 # 要么把"先挂后写"的合法用法全打成假红。**反引号 = 硬引用(受本闸门强制);[[]] = 软链接
 # (允许待落地/跨载体)** —— 两种形式强制力不同是设计,规范见 .brain/README.md §链接规范。
+# ⚠️ **camelCase 分支：实测后否决,别再"补"上去**(2026-08-16)。
+# 想法很自然 —— 现有两个分支是 dotted.path 与 snake_case,对 Java/JS/Go/Kotlin
+# 几乎全盲,加一条 `[a-z]+[A-Z][a-zA-Z0-9]*` 就能覆盖。实测结果否决了它:
+#
+#   语料:本机 143 个 .md / 4,660 个反引号片段,按项目分别统计"引用了但代码里不存在"
+#   ┌─────────────┬──────────────┬──────────────┐
+#   │ 项目        │ snake(现有)  │ camelCase    │
+#   ├─────────────┼──────────────┼──────────────┤
+#   │ A           │     12.8%    │    65.9%     │
+#   │ B           │      0.0%    │    64.3%     │
+#   │ C           │     32.3%    │      —       │
+#   └─────────────┴──────────────┴──────────────┘
+#
+# 根因不是正则写得不好,是**生态差异**:JS/Java 文档里的 camelCase 大量是**外部 API**
+# (`getUserMedia` `stopPropagation` `beforeMount` `defineConfig`),它们本来就不在
+# 本仓代码里 —— 而本检查的判据恰恰是"必须在本仓能找到"。误报率 65% 不是调参能救的。
+#
+# ⇒ 守住本文件 docstring 里的那条原则:**一个吵闹的检查会被 `--no-verify` 绕过,
+#   最终等于没有 —— 那比没有还糟,因为它会训练人跳过整组 pre-commit。**
+#   宁可少覆盖一门语言,不可降低信噪比。
+#
+# 要覆盖 camelCase 生态的话,需要的不是这条正则,而是先有"允许引用外部 API"的白名单
+# 机制 —— 那是另一个功能,不是本条的补丁。
 _SYMBOL = re.compile(
     r"`([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)+|_?[a-zA-Z][a-zA-Z0-9]*_[a-zA-Z0-9_]+)`"
 )
@@ -171,10 +194,12 @@ def main() -> int:
     targets = sys.argv[1:] or TARGETS
     bad: list[tuple[str, str]] = []
     checked = 0
+    read_any = False
     for rel in targets:
         path = ROOT / rel
         if not path.exists():
             continue
+        read_any = True
         for sym in sorted(_referenced_symbols(path.read_text(encoding="utf-8"))):
             checked += 1
             if not _exists(sym):
@@ -191,6 +216,17 @@ def main() -> int:
             "\n改文档或改代码,让两边对上。"
         )
         return 1
+
+    # ⚠️ **一个目标文件都没读到 = 这道检查什么都没做**,不能报「全部命中」。
+    # 实测:在没有 CLAUDE.md 的仓库里跑,它输出「✅ 全部命中(0 个)」—— 与「检查过且
+    # 全部合格」在输出上完全同形。这正是本工具存在的理由,而它长在工具自己身上。
+    # 退出码仍给 0(目标不存在不等于检查失败),但话必须说清楚。
+    if not read_any:
+        print(
+            f"⚠️ 待查文档一个都不存在({', '.join(targets)})—— **本次什么都没检查**。\n"
+            f"   用 `check_doc_references.py <你的文档.md>` 指定,或把 TARGETS 改成你的入口文件。"
+        )
+        return 0
 
     print(f"✅ 文档符号引用全部命中({checked} 个)")
     return 0
